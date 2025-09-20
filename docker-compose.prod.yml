@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ultimatepos_app_prod
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./storage/app:/var/www/html/storage/app
+      - ./storage/logs:/var/www/html/storage/logs
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_HOST=mysql
+      - DB_DATABASE=ultimatepos_prod
+      - DB_USERNAME=ultimatepos
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - APP_KEY=${APP_KEY}
+    ports:
+      - "80:80"
+    networks:
+      - ultimatepos-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: ultimatepos_mysql_prod
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ultimatepos_prod
+      MYSQL_USER: ultimatepos
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - ultimatepos-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ultimatepos_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - ultimatepos-network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  ultimatepos-network:
+    driver: bridge
