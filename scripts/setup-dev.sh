@@ -56,9 +56,7 @@ mkdir -p storage/logs
 mkdir -p bootstrap/cache
 
 # Set permissions
-print_status "Setting proper permissions..."
-chmod -R 755 storage
-chmod -R 755 bootstrap/cache
+# Permissions are set later from within the container
 
 # Build and start containers
 print_status "Building and starting Docker containers..."
@@ -78,6 +76,7 @@ docker-compose exec app composer install
 
 # Build frontend assets
 print_status "Building frontend assets..."
+docker-compose exec app npm install
 docker-compose exec app npm run build
 
 # Generate application key
@@ -100,7 +99,10 @@ fi
 print_status "Creating storage symbolic link..."
 docker-compose exec app php artisan storage:link
 
-# Clear and cache config
+# Clear and cache config and fix permissions
+print_status "Setting proper storage permissions..."
+docker-compose exec app chmod -R 777 storage bootstrap/cache
+
 print_status "Optimizing application..."
 docker-compose exec app php artisan config:clear
 docker-compose exec app php artisan cache:clear
